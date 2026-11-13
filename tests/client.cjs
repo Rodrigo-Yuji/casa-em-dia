@@ -37,6 +37,9 @@ console.log('PASS: catalog lists registered recurrences independent of date and 
 const variable={recurrence:'interval',interval_days:2,starts_on:'2026-01-30'};
 assert.equal(t.scheduled(variable,'2026-01-29'),false);assert.equal(t.scheduled(variable,'2026-01-30'),true);assert.equal(t.scheduled(variable,'2026-01-31'),false);assert.equal(t.scheduled(variable,'2026-02-01'),true);variable.interval_days=4;assert.equal(t.scheduled(variable,'2026-02-03'),true);assert.equal(t.scheduled(variable,'2026-02-01'),false);
 console.log('PASS: anchored variable recurrence crosses month boundaries without drifting');
+const former=t.seed();former.members[1].is_active=false;former.completions=[{id:'former-history',task_id:former.tasks[0].id,task_title:'Cuidado antigo',occurrence_date:d,original_member_id:b,completed_by:b,completed_at:d+'T12:00:00Z'}];t.setState(former);const historyMarkup=t.favors(),historyStart=historyMarkup.indexOf('<h2>Quem fez o quê</h2>');assert.ok(!historyMarkup.slice(0,historyStart).includes('Ana'),'Removed residents are absent from participation summary');assert.ok(historyMarkup.slice(historyStart).includes('Ana'),'Historical authors remain identified');
+console.log('PASS: removed residents are excluded from current participation while historical authors remain');
+
 
 (async()=>{
  const storage=new Map();ctx.localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};vm.runInContext('render=()=>{}',ctx);
