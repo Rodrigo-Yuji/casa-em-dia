@@ -38,7 +38,11 @@ Deno.serve(async (req) => {
       const {data:claimed,error:claimError}=await admin.rpc("casa_push_claim",{p_subscription:item.subscription_id,p_task:item.task_id,p_date:item.occurrence_date});
       if(claimError||!claimed) continue;
     }
-    const payload=JSON.stringify({title:cron?item.emoji+" Hora de cuidar da casa":"Casa em dia • Tudo certo!",body:cron?item.title+" — sua tarefa está te esperando.":"Os lembretes estão funcionando neste aparelho.",tag:cron?item.task_id+"-"+item.occurrence_date:"casa-test",url:config.site_url+(item.control_id?"?control="+item.control_id:"")+"#hoje"});
+    const destination=new URL(config.site_url);
+    if(cron&&item.household_id)destination.searchParams.set("house",item.household_id);
+    if(cron&&item.control_id)destination.searchParams.set("control",item.control_id);
+    destination.hash="hoje";
+    const payload=JSON.stringify({title:cron?item.emoji+" Hora de cuidar da casa":"Casa em dia • Tudo certo!",body:cron?item.title+" — sua tarefa está te esperando.":"Os lembretes estão funcionando neste aparelho.",tag:cron?item.task_id+"-"+item.occurrence_date:"casa-test",url:destination.href});
     try{
       await webpush.sendNotification({endpoint:item.endpoint,keys:{p256dh:item.p256dh,auth:item.auth}},payload,{TTL:900,urgency:"high",timeout:10000});
       sent++;

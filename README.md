@@ -60,3 +60,11 @@ Os testes SQL de autorização incluem tentativas de leitura e alteração por u
 Em Pessoas e ausências, a seção Controles privados fica antes de Convide quem mora com você. Crie um controle para Só eu ou para você e outro morador. O criador pode renomear ou excluir o controle. Os participantes ficam fixos para não expor um histórico existente a uma pessoa nova. Excluir um controle exige confirmação e apaga suas tarefas, ausências e histórico; a casa e os outros controles permanecem intactos.
 
 No catálogo Todas as tarefas, Arquivadas é uma seção recolhida por padrão dentro de cada categoria. É possível reativar, editar e excluir uma tarefa arquivada. Excluir uma tarefa exige confirmação, remove-a da rotina e das listas e preserva as realizações anteriores no histórico. O banco guarda uma marca de exclusão para impedir reativação acidental pelo aplicativo.
+
+## Gerenciar várias casas
+
+Configurações → Gerenciar casas permite criar outra casa, entrar por convite, trocar a casa em uso e definir a casa padrão. A casa padrão é aberta ao iniciar o aplicativo. Cada casa conserva seus próprios moradores, tarefas e controles privados. Uma conta pode pertencer a várias casas, com um perfil por casa.
+
+Para entrar na casa de outra pessoa após criar uma casa por engano: use Entrar por convite, cole o código recebido e, se seu nome já existir, vincule esse perfil. A opção Tornar esta casa a minha padrão vem marcada. Depois você pode excluir a casa criada por engano, sem precisar apagar sua conta.
+
+Só o responsável pode renomear ou excluir uma casa. Excluir pede que ele digite o nome exato e apaga todos os dados dessa casa, inclusive controles privados, para todos os moradores. Outros moradores podem sair da casa; seus perfis e históricos são preservados, mas eles perdem o acesso e deixam de participar do rodízio. Ao entrar novamente, o perfil anterior é reativado. As notificações identificam a casa para abrir o contexto correto.
