@@ -46,3 +46,11 @@ As tabelas públicas têm RLS e apenas leitura restrita à própria casa. As alt
 - `tests/database.sql` e `tests/task-isolation.sql`: cenários transacionais com rollback, sem dados de teste persistidos.
 
 Os arquivos SQL em database/ são o histórico aplicado, em ordem: schema.sql, redistribution.sql, push.sql, reminder-schedule.sql, assignment-fix.sql, rotation-and-specific-favors.sql, validate-current-responsibility.sql, rotation-indexes.sql, rotation-without-extra-debt.sql, isolate-task-rotation.sql. Não reaplicar em banco já migrado. As chaves de push foram provisionadas separadamente, sem incluir valores secretos no código.
+
+## Recorrência a cada X dias e controles privados
+
+Em Nova tarefa ou Editar tarefa, escolha **A cada X dias**, informe o intervalo de 1 a 365 e a data **Começando a partir de**. As datas seguem essa referência, inclusive ao mudar de mês. Concluir uma tarefa atrasada não desloca o calendário.
+
+Use **＋ Controle privado** no seletor Controle para criar um espaço entre você e outro morador já cadastrado. Só esses dois participantes veem as tarefas, ausências e histórico desse espaço. A pessoa selecionada acessa o controle pela própria conta vinculada à casa; não é enviado convite por e-mail. O rodízio desse controle não altera a carga ou a sequência da casa inteira. Ausências registradas no controle privado valem somente nele. O seletor permite voltar à Casa inteira.
+
+Os testes SQL de autorização incluem tentativas de leitura e alteração por um terceiro usuário, inclusive acesso direto às tabelas com RLS. As tabelas dos controles privados são separadas das tabelas da casa.

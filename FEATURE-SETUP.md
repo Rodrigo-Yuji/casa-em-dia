@@ -1,6 +1,6 @@
 # Recorrências variáveis e controles privados
 
-Branch de implementação. Ainda não publicar no Pages antes da validação do banco.
+Implementação aplicada e validada no banco após reautorizar a integração.
 
 Ordem planejada:
 
@@ -18,4 +18,4 @@ Os controles privados usam tabelas separadas do controle da casa. Participantes 
 
 A recorrência “a cada X dias” usa a data inicial como âncora, aceita de 1 a 365 dias e não se desloca quando uma conclusão é registrada com atraso.
 
-Pendência atual: a integração Supabase retorna “You do not have permission to perform this action” após a transferência do projeto. Os scripts SQL ainda não foram aplicados nem executados no servidor. Não considerar a validação local como prova de segurança do banco.
+Validação concluída: os três scripts foram aplicados por migração; os testes transacionais de recorrência, rodízio, isolamento entre tarefas, acesso dos dois participantes e bloqueio da terceira pessoa passaram com rollback. A Edge Function foi atualizada. A entrega real em aparelhos depende da permissão de notificações de cada usuário. O ambiente não dispõe de navegador automatizado para conferir a apresentação visual.
