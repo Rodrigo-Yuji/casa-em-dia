@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
 const code=fs.readFileSync(__dirname+'/../app.js','utf8').split("document.addEventListener('click',async")[0];
 const ctx={console,Intl,Date,URL,URLSearchParams,location:{search:''},crypto:require('crypto').webcrypto,localStorage:{getItem:()=>null},document:{querySelector:()=>({})}};
-vm.createContext(ctx);vm.runInContext(code+`\nglobalThis.test={seed,assignments,taskCard,today,plusDate,setState:s=>{state=s;day=today()},setDemo:b=>{demo=b},personColors,personFilters,favors,home,agenda,recurrenceText,scheduled,switchControl,mutation,getState:()=>state,setCatalog:(kind,status='all')=>{catalogTab=kind;catalogStatus=status}}`,ctx);
+vm.createContext(ctx);vm.runInContext(code+`\nglobalThis.test={seed,assignments,taskCard,today,plusDate,setState:s=>{state=s;day=today()},setDemo:b=>{demo=b},personColors,personFilters,favors,home,agenda,recurrenceText,scheduled,switchControl,mutation,getState:()=>state,setSession:s=>{session=s},visibilityLabel,setSources:(house,pairs)=>{homeState=house;pairStates=Object.fromEntries(pairs.map(x=>[x.control_id,x]));pairControls=pairs.map(x=>({id:x.control_id,name:x.household.name}));rebuildUnified()},setCatalog:(kind,status='all')=>{catalogTab=kind;catalogStatus=status}}`,ctx);
 const t=ctx.test,s=t.seed(),d=t.today();t.setState(s);const [a,b,c]=s.members.map(x=>x.id);
 const task=s.tasks[0];s.tasks=[task];task.starts_on=t.plusDate(d,-6);
 function add(date,actual,expected){const assignment=t.assignments(date)[0];assert.equal(assignment.effective,expected);s.completions.push({id:require('crypto').randomUUID(),task_id:task.id,task_title:task.title,occurrence_date:date,original_member_id:assignment.effective,completed_by:actual,exempt:false,completed_at:date+'T12:00:00Z'})}
@@ -40,8 +40,14 @@ console.log('PASS: anchored variable recurrence crosses month boundaries without
 
 (async()=>{
  const storage=new Map();ctx.localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)};vm.runInContext('render=()=>{}',ctx);
- const shared=t.seed(),privateState={household:{...shared.household,name:'Controle privado'},scope:'pair',members:shared.members.slice(0,2),tasks:[],absences:[],completions:[],settlements:[]};
- t.setState(shared);storage.set('casa.demo.control.private-test',JSON.stringify(privateState));await t.switchControl('private-test');assert.equal(t.getState().members.length,2);assert.equal(t.getState().members.some(m=>m.id===c),false);
- await t.mutation('casa_save_task',{},()=>t.getState().tasks.push({...shared.tasks[0],id:'private-task'}));assert.ok(storage.has('casa.demo.control.private-test'));await t.switchControl('');assert.equal(t.getState().tasks.some(task=>task.id==='private-task'),false,'Private changes never enter shared tasks');
- console.log('PASS: switching controls and local writes keep shared and private task lists separate');
+ const shared=t.seed(),privateState={household:{...shared.household,name:'Aquário'},scope:'pair',control_id:'private-test',members:shared.members.slice(0,2),tasks:[{...shared.tasks[0],id:'private-task'}],absences:[],completions:[],settlements:[]};
+ t.setState(shared);const originalShared=JSON.stringify(shared),before=t.assignments(d);t.setSources(shared,[privateState]);
+ assert.equal(t.getState().tasks.length,shared.tasks.length+1,'All authorized tasks are visible together');assert.equal(t.assignments(d).length,shared.tasks.length+1);
+ const privateTask=t.assignments(d).find(task=>task.id==='private-task');assert.ok([a,b].includes(privateTask.effective),'Private rotation excludes the third resident');assert.ok(t.visibilityLabel(privateTask).includes('Ana')&&!t.visibilityLabel(privateTask).includes('Pedro'),'Private label names the other participant');
+ assert.equal(t.getState().tasks.find(task=>task.id==='private-task')._control_id,'private-test');
+ const tasks=t.assignments(d);for(const task of before)assert.equal(tasks.find(x=>x.id===task.id).effective,task.effective,'Private tasks do not change shared assignments');
+ await t.mutation('casa_complete_task',{p_task_id:'private-task'},source=>source.completions.push({id:'private-completion',task_id:'private-task',task_title:'Aquário',occurrence_date:d,original_member_id:b,completed_by:a,completed_at:d+'T12:00:00Z'}));assert.ok(storage.has('casa.demo.control.private-test'));assert.equal(JSON.stringify(shared),originalShared,'Private mutations preserve shared data');assert.equal(t.getState().tasks.length,shared.tasks.length+1,'Combined view remains after private mutation');
+ t.setSources(shared,[]);assert.ok(!t.getState().tasks.some(task=>task.id==='private-task'),'A snapshot without authorized controls reveals no private task');
+ const calls=[];t.setSources(shared,[privateState]);t.setDemo(false);t.setSession({user:{id:'test-user'}});ctx.rpc=async(name,args)=>{calls.push({name,args});return privateState};await t.mutation('casa_archive_task',{p_task_id:'private-task'},()=>{});assert.equal(calls[0].name,'casa_pair_archive_task');assert.equal(calls[0].args.p_control,'private-test');assert.equal(JSON.stringify(shared),originalShared);
+ console.log('PASS: unified authorized tasks, explicit private participants, separate rotation, private mutation storage and API routing');
 })().catch(error=>{console.error(error);process.exitCode=1});
