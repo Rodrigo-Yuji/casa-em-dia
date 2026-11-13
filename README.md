@@ -54,3 +54,9 @@ Em Nova tarefa ou Editar tarefa, escolha **A cada X dias**, informe o intervalo 
 Use **＋ Controle privado** no seletor Controle para criar um espaço entre você e outro morador já cadastrado. Só esses dois participantes veem as tarefas, ausências e histórico desse espaço. A pessoa selecionada acessa o controle pela própria conta vinculada à casa; não é enviado convite por e-mail. O rodízio desse controle não altera a carga ou a sequência da casa inteira. Ausências registradas no controle privado valem somente nele. As tarefas da casa e dos controles privados aparecem juntas em Meu dia, no catálogo e no histórico, com etiquetas que identificam sua visibilidade e os participantes. Não é preciso alternar de controle. Ao criar uma tarefa, escolha explicitamente quem pode vê-la; a visibilidade de uma tarefa existente é preservada ao editar.
 
 Os testes SQL de autorização incluem tentativas de leitura e alteração por um terceiro usuário, inclusive acesso direto às tabelas com RLS. As tabelas dos controles privados são separadas das tabelas da casa.
+
+## Gestão de controles e tarefas
+
+Em Pessoas e ausências, a seção Controles privados fica antes de Convide quem mora com você. Crie um controle para Só eu ou para você e outro morador. O criador pode renomear ou excluir o controle. Os participantes ficam fixos para não expor um histórico existente a uma pessoa nova. Excluir um controle exige confirmação e apaga suas tarefas, ausências e histórico; a casa e os outros controles permanecem intactos.
+
+No catálogo Todas as tarefas, Arquivadas é uma seção recolhida por padrão dentro de cada categoria. É possível reativar, editar e excluir uma tarefa arquivada. Excluir uma tarefa exige confirmação, remove-a da rotina e das listas e preserva as realizações anteriores no histórico. O banco guarda uma marca de exclusão para impedir reativação acidental pelo aplicativo.

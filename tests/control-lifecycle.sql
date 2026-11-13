@@ -1,0 +1,42 @@
+begin;
+do $test$
+declare ua uuid:=gen_random_uuid();ub uuid:=gen_random_uuid();uc uuid:=gen_random_uuid();h uuid;a uuid;b uuid;c uuid;solo uuid;pair_id uuid;task uuid;shared_task uuid;assigned uuid;d date:=(now()at time zone 'America/Sao_Paulo')::date;payload jsonb;
+begin
+ insert into auth.users(id,email)values(ua,'life-a-'||ua||'@example.invalid'),(ub,'life-b-'||ub||'@example.invalid'),(uc,'life-c-'||uc||'@example.invalid');
+ perform set_config('request.jwt.claim.sub',ua::text,true);perform public.casa_create_household('Lifecycle test','A');h:=public.casa_my_household();
+ select id into a from public.casa_members where user_id=ua;perform public.casa_add_member('B');perform public.casa_add_member('C');
+ select id into b from public.casa_members where household_id=h and name='B';select id into c from public.casa_members where household_id=h and name='C';
+ update public.casa_members set user_id=ub where id=b;update public.casa_members set user_id=uc where id=c;
+ solo:=(public.casa_pair_create('Pessoal',null)->>'id')::uuid;pair_id:=(public.casa_pair_create('Dupla',b)->>'id')::uuid;
+ if jsonb_array_length(public.casa_pair_snapshot(solo)->'members')<>1 then raise exception 'FAIL: personal control has extra participants';end if;
+ payload:=jsonb_build_object('title','Só minha','emoji','🌿','assignee_id',a,'starts_on',d,'due_time','18:00','recurrence','daily','duration_minutes',10,'interval_days',1);
+ begin perform public.casa_pair_save_task(solo,payload||jsonb_build_object('assignee_id',c));raise exception 'FAIL: outsider accepted in personal task';exception when raise_exception then if sqlerrm like 'FAIL:%'then raise;end if;end;
+ begin perform public.casa_pair_save_absence(solo,c,d,null,'Invalid');raise exception 'FAIL: outsider accepted in personal absence';exception when raise_exception then if sqlerrm like 'FAIL:%'then raise;end if;end;
+ perform public.casa_pair_save_task(solo,payload);select id into task from public.casa_pair_tasks where control_id=solo;
+ if exists(select 1 from casa_private.pair_assignments(solo,d+1)where effective_member_id<>a)then raise exception 'FAIL: personal task rotated outside owner';end if;
+ perform public.casa_pair_complete_task(solo,task,d,a);perform public.casa_pair_delete_task(solo,task);
+ if jsonb_array_length(public.casa_pair_snapshot(solo)->'tasks')<>0 then raise exception 'FAIL: deleted private task remains visible';end if;
+ if jsonb_array_length(public.casa_pair_snapshot(solo)->'completions')<>1 then raise exception 'FAIL: task deletion erased history';end if;
+ begin perform public.casa_pair_save_task(solo,payload||jsonb_build_object('id',task));raise exception 'FAIL: deleted task revived';exception when raise_exception then if sqlerrm like 'FAIL:%'then raise;end if;end;
+ perform public.casa_pair_rename(solo,'Meu controle');
+ if public.casa_pair_snapshot(solo)->'household'->>'name'<>'Meu controle'then raise exception 'FAIL: rename not reflected';end if;
+ perform set_config('request.jwt.claim.sub',ub::text,true);
+ if public.casa_pair_can_access(solo)then raise exception 'FAIL: personal control visible to other resident';end if;
+ begin perform public.casa_pair_rename(pair_id,'Wrong');raise exception 'FAIL: noncreator renamed';exception when raise_exception then if sqlerrm like 'FAIL:%'then raise;end if;end;
+ begin perform public.casa_pair_delete(pair_id);raise exception 'FAIL: noncreator deleted';exception when raise_exception then if sqlerrm like 'FAIL:%'then raise;end if;end;
+ perform set_config('request.jwt.claim.sub',ua::text,true);perform public.casa_pair_save_task(pair_id,payload);perform public.casa_pair_save_absence(pair_id,b,d,null,'Test');
+ perform public.casa_pair_delete(pair_id);
+ if exists(select 1 from public.casa_pair_controls where id=pair_id)or exists(select 1 from public.casa_pair_tasks where control_id=pair_id)or exists(select 1 from public.casa_pair_absences where control_id=pair_id)then raise exception 'FAIL: control deletion incomplete';end if;
+ select task_id,effective_member_id into shared_task,assigned from casa_private.assignments(h,d)limit 1;
+ perform public.casa_complete_task(shared_task,d,assigned);perform public.casa_delete_task(shared_task);
+ if exists(select 1 from jsonb_array_elements(public.casa_snapshot()->'tasks')t where t->>'id'=shared_task::text)then raise exception 'FAIL: deleted shared task visible';end if;
+ if not exists(select 1 from public.casa_completions where task_id=shared_task)then raise exception 'FAIL: shared history erased';end if;
+ perform set_config('request.jwt.claim.sub',ub::text,true);
+end $test$;
+set local role authenticated;
+do $rls$begin
+ if exists(select 1 from public.casa_pair_controls)or exists(select 1 from public.casa_pair_tasks)or exists(select 1 from public.casa_pair_completions)then raise exception 'FAIL: RLS exposed personal control';end if;
+end $rls$;
+reset role;
+select 'PASS: personal control privacy, solo rotation, outsider validation, owner-only management, control deletion, task deletion preserving history, no revival' as result;
+rollback;
