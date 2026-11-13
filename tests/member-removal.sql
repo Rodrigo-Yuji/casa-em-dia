@@ -1,0 +1,33 @@
+begin;
+do $test$
+declare ua uuid:=gen_random_uuid();ub uuid:=gen_random_uuid();uc uuid:=gen_random_uuid();h uuid;a uuid;b uuid;c uuid;code uuid;other_house uuid;private_id uuid;task uuid;d date:=(now()at time zone 'America/Sao_Paulo')::date;
+begin
+ insert into auth.users(id,email)values(ua,'remove-a-'||ua||'@example.invalid'),(ub,'remove-b-'||ub||'@example.invalid'),(uc,'remove-c-'||uc||'@example.invalid');
+ perform set_config('request.jwt.claim.sub',ua::text,true);perform public.casa_create_household('Removal test','A');h:=public.casa_my_household();
+ select id into a from public.casa_members where user_id=ua and household_id=h;perform public.casa_add_member('B');perform public.casa_add_member('C');
+ select id into b from public.casa_members where household_id=h and name='B';select id into c from public.casa_members where household_id=h and name='C';
+ update public.casa_members set user_id=ub where id=b;update public.casa_members set user_id=uc where id=c;select invite_code into code from public.casa_households where id=h;
+ perform set_config('request.jwt.claim.sub',ub::text,true);perform public.casa_create_household('Another house of B','B');other_house:=public.casa_my_household();perform public.casa_household_switch(h);
+ private_id:=(public.casa_pair_create('B and A',a)->>'id')::uuid;
+ perform public.casa_pair_save_task(private_id,jsonb_build_object('title','Private','emoji','🌿','assignee_id',b,'starts_on',d,'due_time','18:00','recurrence','daily','interval_days',1,'duration_minutes',10));
+ begin perform public.casa_household_remove_member(c);raise exception 'FAIL: nonowner removed resident';exception when raise_exception then if sqlerrm like 'FAIL:%'then raise;end if;end;
+ perform set_config('request.jwt.claim.sub',ua::text,true);
+ begin perform public.casa_household_remove_member(a);raise exception 'FAIL: owner removed themselves';exception when raise_exception then if sqlerrm like 'FAIL:%'then raise;end if;end;
+ select id into task from public.casa_tasks where household_id=h limit 1;
+ insert into public.casa_completions(household_id,task_id,task_title,occurrence_date,original_member_id,completed_by)values(h,task,'History',d-1,b,b);
+ perform public.casa_household_remove_member(b);
+ if exists(select 1 from public.casa_members where id=b and is_active)then raise exception 'FAIL: resident still active';end if;
+ if not exists(select 1 from public.casa_completions where completed_by=b)then raise exception 'FAIL: history erased';end if;
+ if exists(select 1 from casa_private.assignments(h,d)where effective_member_id=b)then raise exception 'FAIL: removed resident receives shared tasks';end if;
+ if exists(select 1 from casa_private.pair_assignments(private_id,d)where effective_member_id=b)then raise exception 'FAIL: removed resident receives private tasks';end if;
+ if (select invite_code from public.casa_households where id=h)=code then raise exception 'FAIL: invitation not rotated';end if;
+ if (select created_by from public.casa_pair_controls where id=private_id)<>ua then raise exception 'FAIL: remaining private participant cannot manage control';end if;
+ perform set_config('request.jwt.claim.sub',ub::text,true);
+ if public.casa_my_household()<>other_house then raise exception 'FAIL: other membership was lost';end if;
+ if public.casa_pair_can_access(private_id)then raise exception 'FAIL: removed resident retains private access';end if;
+ begin perform public.casa_join_household(code,'B',null);raise exception 'FAIL: old invitation allowed reentry';exception when raise_exception then if sqlerrm like 'FAIL:%'then raise;end if;end;
+ perform set_config('request.jwt.claim.sub',uc::text,true);
+ begin perform public.casa_household_remove_member(a);raise exception 'FAIL: another nonowner removed admin';exception when raise_exception then if sqlerrm like 'FAIL:%'then raise;end if;end;
+end $test$;
+select 'PASS: owner-only removal, owner protection, retained history, shared/private access and rotation revoked, invite rotated, other houses retained' as result;
+rollback;

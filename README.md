@@ -68,3 +68,9 @@ Configurações → Gerenciar casas permite criar outra casa, entrar por convite
 Para entrar na casa de outra pessoa após criar uma casa por engano: use Entrar por convite, cole o código recebido e, se seu nome já existir, vincule esse perfil. A opção Tornar esta casa a minha padrão vem marcada. Depois você pode excluir a casa criada por engano, sem precisar apagar sua conta.
 
 Só o responsável pode renomear ou excluir uma casa. Excluir pede que ele digite o nome exato e apaga todos os dados dessa casa, inclusive controles privados, para todos os moradores. Outros moradores podem sair da casa; seus perfis e históricos são preservados, mas eles perdem o acesso e deixam de participar do rodízio. Ao entrar novamente, o perfil anterior é reativado. As notificações identificam a casa para abrir o contexto correto.
+
+## Logout e remoção de moradores
+
+O botão Sair da conta está disponível mesmo sem casa, na tela vazia e no formulário de criação/entrada. O logout local não depende da resposta da rede nem da inicialização das notificações. Respostas vazias bem-sucedidas de RPCs (como exclusões e ações sem retorno) são aceitas, evitando erro de JSON após uma operação já concluída.
+
+Em Pessoas e ausências, o responsável da casa pode remover outro morador ou um perfil ainda sem conta vinculada. O perfil e o histórico são preservados, mas ele deixa de participar do rodízio e perde o acesso aos dados e controles privados daquela casa. A remoção renova o convite para impedir reentrada com o código antigo. Outras casas da pessoa permanecem intactas. Quando o criador de um controle privado é removido, o outro participante ativo com conta vinculada passa a gerenciá-lo. O responsável não pode remover a si próprio.
