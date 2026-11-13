@@ -74,3 +74,7 @@ Só o responsável pode renomear ou excluir uma casa. Excluir pede que ele digit
 O botão Sair da conta está disponível mesmo sem casa, na tela vazia e no formulário de criação/entrada. O logout local não depende da resposta da rede nem da inicialização das notificações. Respostas vazias bem-sucedidas de RPCs (como exclusões e ações sem retorno) são aceitas, evitando erro de JSON após uma operação já concluída.
 
 Em Pessoas e ausências, o responsável da casa pode remover outro morador ou um perfil ainda sem conta vinculada. O perfil e o histórico são preservados, mas ele deixa de participar do rodízio e perde o acesso aos dados e controles privados daquela casa. A remoção renova o convite para impedir reentrada com o código antigo. Outras casas da pessoa permanecem intactas. Quando o criador de um controle privado é removido, o outro participante ativo com conta vinculada passa a gerenciá-lo. O responsável não pode remover a si próprio.
+
+## Instruções das tarefas
+
+Nova tarefa e Editar tarefa possuem o campo opcional O que deve ser feito?, com até 5.000 caracteres. Os cartões do dia e do catálogo têm o botão O que deve ser feito para abrir as instruções em uma janela, sem precisar editar a tarefa. O texto é exibido como texto simples, preservando quebras de linha, e segue as mesmas permissões da tarefa. Tarefas sem descrição mostram uma mensagem indicando que nenhuma instrução foi adicionada.
