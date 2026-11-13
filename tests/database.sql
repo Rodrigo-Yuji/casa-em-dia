@@ -1,0 +1,45 @@
+begin;
+do $test$
+declare ua uuid:=gen_random_uuid();ub uuid:=gen_random_uuid();uc uuid:=gen_random_uuid();h uuid;a uuid;b uuid;c uuid;task uuid;pick uuid;doc jsonb;d date:=(now() at time zone 'America/Sao_Paulo')::date;dt date;sequence uuid[];i integer;
+begin
+ insert into auth.users(id,email) values(ua,'casa-rotation-a-'||ua||'@example.invalid'),(ub,'casa-rotation-b-'||ub||'@example.invalid'),(uc,'casa-rotation-c-'||uc||'@example.invalid');
+ perform set_config('request.jwt.claim.sub',ua::text,true);
+ doc:=public.casa_create_household('Rodízio teste','A');h:=(doc->'household'->>'id')::uuid;
+ select id into a from public.casa_members where user_id=ua;
+ perform public.casa_add_member('B');perform public.casa_add_member('C');
+ select id into b from public.casa_members where household_id=h and name='B';select id into c from public.casa_members where household_id=h and name='C';
+ update public.casa_members set user_id=ub where id=b;update public.casa_members set user_id=uc where id=c;
+ select id into task from public.casa_tasks where household_id=h and title='Limpar a areia dos gatos';
+ update public.casa_tasks set active=false where household_id=h and id<>task;
+ update public.casa_tasks set starts_on=d-6 where id=task;
+ sequence:=array[a,b,c,a,c,a];
+ for i in 1..6 loop
+ dt:=d-7+i;
+ if i=4 then perform set_config('request.jwt.claim.sub',ua::text,true);perform public.casa_save_absence(b,d-3,d-1,'Viagem');end if;
+ select effective_member_id into pick from casa_private.assignments(h,dt) where task_id=task;
+ if pick<>sequence[i] then raise exception 'FAIL: rotation step %, expected %, got %',i,sequence[i],pick;end if;
+ perform set_config('request.jwt.claim.sub',case when pick=a then ua::text when pick=b then ub::text else uc::text end,true);
+ perform public.casa_complete_task(task,dt,pick);
+ update public.casa_completions set completed_at=dt::timestamp at time zone 'America/Sao_Paulo' where task_id=task and occurrence_date=dt;
+ end loop;
+ select effective_member_id into pick from casa_private.assignments(h,d) where task_id=task;
+ if pick<>b then raise exception 'FAIL: returning member lost place';end if;
+ perform set_config('request.jwt.claim.sub',ua::text,true);
+ begin perform public.casa_complete_task(task,d,c);raise exception 'FAIL: stale responsibility accepted';exception when raise_exception then if sqlerrm like 'FAIL:%' then raise;end if;end;
+ perform public.casa_complete_task(task,d,b);
+ if not exists(select 1 from public.casa_completions where task_id=task and occurrence_date=d and original_member_id=b and completed_by=a) then raise exception 'FAIL: wrong favor recorded';end if;
+ select effective_member_id into pick from casa_private.assignments(h,d+1) where task_id=task;
+ if pick<>b then raise exception 'FAIL: actual helper did not move back';end if;
+ if has_function_privilege('authenticated','public.casa_settle_favors(uuid,integer)','execute') then raise exception 'FAIL: generic settlement still allowed';end if;
+ perform public.casa_archive_task(task);
+ if not exists(select 1 from public.casa_completions where task_id=task and occurrence_date=d and completed_by=a) then raise exception 'FAIL: coverage history lost';end if;
+ update public.casa_tasks set active=true where id=task;
+ perform public.casa_save_absence(a,d,null,'Teste');perform public.casa_save_absence(b,d,null,'Teste');perform public.casa_save_absence(c,d,null,'Teste');
+ if exists(select 1 from casa_private.assignments(h,d+1) where effective_member_id is not null) then raise exception 'FAIL: assigned while all absent';end if;
+ if not exists(select 1 from casa_private.assignments(h,d) where effective_member_id=b) then raise exception 'FAIL: historical completion changed';end if;
+ perform set_config('request.jwt.claim.sub',gen_random_uuid()::text,true);
+ if public.casa_snapshot() is not null then raise exception 'FAIL: tenant data exposed';end if;
+ if has_function_privilege('authenticated','public.casa_push_config_service()','execute') then raise exception 'FAIL: secret access';end if;
+end $test$;
+select 'PASS: full round-robin, absences, return priority, actual helper queue, expected assignee validation, coverage without extra debt, disabled manual settlements, preserved coverage history, all absent and tenant isolation' as result;
+rollback;
