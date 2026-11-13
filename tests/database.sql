@@ -7,7 +7,8 @@ begin
  doc:=public.casa_create_household('Rodízio teste','A');h:=(doc->'household'->>'id')::uuid;
  select id into a from public.casa_members where user_id=ua;
  perform public.casa_add_member('B');perform public.casa_add_member('C');
- select id into b from public.casa_members where household_id=h and name='B';select id into c from public.casa_members where household_id=h and name='C';
+ select id into b from public.casa_members where household_id=h and id<>a order by (id<a),id limit 1;
+ select id into c from public.casa_members where household_id=h and id<>a and id<>b;
  update public.casa_members set user_id=ub where id=b;update public.casa_members set user_id=uc where id=c;
  select id into task from public.casa_tasks where household_id=h and title='Limpar a areia dos gatos';
  update public.casa_tasks set active=false where household_id=h and id<>task;

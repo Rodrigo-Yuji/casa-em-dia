@@ -14,13 +14,13 @@ O GitHub Pages é público. Os dados da casa exigem login no Supabase e pertenci
 
 ## Divisão de tarefas
 
-Cada tarefa tem seu próprio rodízio, guiado por quem realmente a fez. Quem ainda não fez tem prioridade; depois, quem fez há mais tempo. Empates são resolvidos pela menor carga estimada do dia, menor número de tarefas, preferência inicial e ID estável. Quem cobre outra pessoa avança para o fim da fila daquela tarefa; o responsável mantém sua vez. Ausentes são pulados, mantêm sua prioridade ao retornar e não acumulam tarefas atrasadas. Se todos estiverem ausentes, a tarefa fica sem responsável.
+Cada tarefa tem seu próprio rodízio, guiado por quem realmente a fez. Quem ainda não fez tem prioridade; depois, quem fez há mais tempo. Empates são resolvidos pela menor carga estimada do dia, menor número de tarefas, preferência inicial e ID estável. Quem cobre outra pessoa avança para o fim da fila daquela tarefa; o responsável mantém sua vez. A distribuição inicial por minutos é planejada separadamente das conclusões: fazer ou cobrir uma tarefa nunca transfere outras tarefas, nem hoje nem nas previsões futuras. O histórico de cada tarefa só altera o rodízio dela. Ausentes são pulados, mantêm sua prioridade ao retornar e não acumulam tarefas atrasadas. Se todos estiverem ausentes, a tarefa fica sem responsável.
 
 A agenda futura simula conclusões pelos responsáveis previstos, por até 366 dias; coberturas e ausências alteram as previsões. Conclusões anteriores preservam o responsável e quem fez. O cliente envia o responsável exibido ao concluir; o banco rejeita uma conclusão se o rodízio tiver mudado, evitando registrar dívida contra a pessoa errada.
 
 Coberturas são compensadas somente pela fila: quem realmente faz vai para o fim do rodízio; quem foi coberto mantém a próxima vez em que estiver disponível. Não existe dívida nem quitação adicional. O histórico preserva a tarefa, a data, o responsável e quem fez, apenas para reconhecer a participação e apoiar conversas. Registros antigos são preservados; não são convertidos em cobranças. Uma pessoa coberta não recebe duas tarefas no dia seguinte; recebe somente a próxima ocorrência da mesma tarefa.
 
-As tarefas têm uma cor por morador (também identificadas pelo nome, sem depender apenas da cor), marcação de “Minha tarefa” e filtros com o nome de todos os moradores. A paleta é compartilhada e determinada pela ordem dos moradores da casa.
+As tarefas têm uma cor por morador (também identificadas pelo nome, sem depender apenas da cor), marcação de “Minha tarefa” e filtros com o nome de todos os moradores. A paleta é compartilhada e determinada pela ordem dos moradores da casa. “Todas as tarefas” é um catálogo de cadastros, com recorrências e abas separadas para tarefas recorrentes e de único dia; inclui filtro de ativas/arquivadas. O perfil do usuário abre Configurações.
 
 ## Cadastro e e-mail
 
@@ -43,6 +43,6 @@ As tabelas públicas têm RLS e apenas leitura restrita à própria casa. As alt
 - `node --check app.js`
 - `node --check sw.js`
 - `node tests/client.cjs`
-- `tests/database.sql`: cenários transacionais com rollback, sem dados de teste persistidos.
+- `tests/database.sql` e `tests/task-isolation.sql`: cenários transacionais com rollback, sem dados de teste persistidos.
 
-Os arquivos SQL em database/ são o histórico aplicado, em ordem: schema.sql, redistribution.sql, push.sql, reminder-schedule.sql, assignment-fix.sql, rotation-and-specific-favors.sql, validate-current-responsibility.sql, rotation-indexes.sql, rotation-without-extra-debt.sql. Não reaplicar em banco já migrado. As chaves de push foram provisionadas separadamente, sem incluir valores secretos no código.
+Os arquivos SQL em database/ são o histórico aplicado, em ordem: schema.sql, redistribution.sql, push.sql, reminder-schedule.sql, assignment-fix.sql, rotation-and-specific-favors.sql, validate-current-responsibility.sql, rotation-indexes.sql, rotation-without-extra-debt.sql, isolate-task-rotation.sql. Não reaplicar em banco já migrado. As chaves de push foram provisionadas separadamente, sem incluir valores secretos no código.
